@@ -25,7 +25,6 @@ import play.PlayPlugin;
 import play.data.binding.BeanWrapper;
 import play.data.binding.Binder;
 import play.data.validation.Validation;
-import play.db.Model;
 import play.exceptions.UnexpectedException;
 import play.mvc.Scope.Params;
 
@@ -35,7 +34,7 @@ import com.avaje.ebean.Update;
 
 @SuppressWarnings("unchecked")
 @MappedSuperclass
-public class EbeanSupport implements play.db.Model
+public class EbeanSupport extends com.avaje.ebean.Model implements play.db.Model
 {
 
   public static <T extends EbeanSupport> T create(Class<?> type, String name, Map<String, String[]> params, Annotation[] annotations)
@@ -141,22 +140,24 @@ public class EbeanSupport implements play.db.Model
     return false;
   }
 
-  public <T extends EbeanSupport> T save()
+  @Override
+  public void save()
   {
     _save();
-    return (T) this;
   }
 
-  public <T extends EbeanSupport> T refresh()
+  @Override
+  public void refresh()
   {
     ebean().refresh(this);
-    return (T) this;
   }
 
-  public <T extends EbeanSupport> T delete()
+  @Override
+  public boolean delete()
   {
-    _delete();
-    return (T) this;
+    boolean del = ebean().delete(this);
+    PlayPlugin.postEvent("JPASupport.objectDeleted", this);
+    return del;
   }
 
   public static <T extends EbeanSupport> T create(String name, Params params)
@@ -199,6 +200,10 @@ public class EbeanSupport implements play.db.Model
     throw enhancementError();
   }
 
+  //public static com.avaje.ebean.Model.Find finder2() { return new com.avaje.ebean.Model.Find<Long,EbeanSupport>(){}; }
+  //public static <T extends EbeanSupport> Find<Long,T> finder() { throw enhancementError(); }
+  //public static <T extends EbeanSupport> com.avaje.ebean.Model.Find<Long,T> finder() { return new com.avaje.ebean.Model.Find<Long,T>(){}; }
+
   public static int delete(String query, Object... params)
   {
     throw enhancementError();
@@ -213,9 +218,7 @@ public class EbeanSupport implements play.db.Model
   {
     Query<T> q = ebean().createQuery(beanType);
     if (where != null) {
-      q.where(where);
-      for (int i = 0; i < params.length; i++)
-        q.setParameter(i + 1, params[i]);
+      q.where().raw(where, params);
     }
     return q;
   }
@@ -254,18 +257,20 @@ public class EbeanSupport implements play.db.Model
     return new UnsupportedOperationException("Please annotate your JPA model with @javax.persistence.Entity annotation.");
   }
 
+  @Override
   public void _save()
   {
     ebean().save(this);
     PlayPlugin.postEvent("JPASupport.objectPersisted", this);
   }
 
+  @Override
   public void _delete()
   {
-    ebean().delete(this);
-    PlayPlugin.postEvent("JPASupport.objectDeleted", this);
+    delete();
   }
 
+  @Override
   public Object _key()
   {
     return Model.Manager.factoryFor(this.getClass()).keyValue(this);

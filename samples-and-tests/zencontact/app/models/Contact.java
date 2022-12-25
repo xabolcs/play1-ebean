@@ -22,6 +22,8 @@ public class Contact extends Model {
     @Email
     private String email;
 
+    public static Find<Long, Contact> find = new Find<Long, Contact>(){};
+
     public String getFirstname()
     {
       return firstname;

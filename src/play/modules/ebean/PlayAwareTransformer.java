@@ -12,10 +12,4 @@ public class PlayAwareTransformer extends Transformer {
     super(r, agentArgs);
   }
 
-  @Override
-  protected ClassWriter createClassWriter()
-  {
-    return new PlayAwareClassWriter();
-
-  }
 }

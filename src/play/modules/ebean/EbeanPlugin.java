@@ -32,6 +32,7 @@ import play.db.DB;
 import play.db.Model;
 import play.db.Model.Property;
 import play.db.jpa.JPAPlugin;
+import play.exceptions.DatabaseException;
 import play.exceptions.UnexpectedException;
 import play.mvc.Http;
 import play.mvc.Http.Request;
@@ -59,10 +60,11 @@ public class EbeanPlugin extends PlayPlugin
     cfg.setRegister("default".equals(name));
     cfg.setDefaultServer("default".equals(name));
     cfg.add(new EbeanModelAdapter());
+    cfg.add(new EbeanPostLoader());
     try {
       result = EbeanServerFactory.create(cfg);
     } catch (Throwable t) {
-      Logger.error("Failed to create ebean server (%s)", t.getMessage());
+      throw new DatabaseException("Failed to create ebean server", t);
     }
     return result;
   }
@@ -202,7 +204,7 @@ public class EbeanPlugin extends PlayPlugin
     }
     return null;
   }
-  
+
   public static class EbeanModelLoader implements Model.Factory
   {
 
@@ -258,9 +260,12 @@ public class EbeanPlugin extends PlayPlugin
         }
       }
 
-      if (filter != null) { 
-        q.where(filter);
-        if (filter.indexOf(":keywords") != -1)  q.setParameter("keywords",  "%" + keywords.toLowerCase() + "%");
+      if (filter != null) {
+        if (filter.indexOf(":keywords") != -1) {
+          q.where().raw(filter,  "%" + keywords.toLowerCase() + "%");
+        } else {
+          q.where().raw(filter);
+        }
       }
 
       if (orderBy == null && order == null) {
@@ -292,8 +297,11 @@ public class EbeanPlugin extends PlayPlugin
         }
       }
       if (filter != null) { 
-        q.where(filter);
-        if (filter.indexOf(":keywords") != -1)  q.setParameter("keywords", "%" + keywords.toLowerCase() + "%");
+        if (filter.indexOf(":keywords") != -1) {
+          q.where().raw(filter, "%" + keywords.toLowerCase() + "%");
+        } else {
+          q.where().raw(filter);
+        }
       }
 
       return Long.valueOf(q.findRowCount());
