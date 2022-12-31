@@ -30,7 +30,6 @@ public class IgnoreClassHelper {
 	static  {
 		ignoreOneLevel.add("java");
 		ignoreOneLevel.add("javax");
-		ignoreOneLevel.add("play");
 		ignoreOneLevel.add("sbt");
 		ignoreOneLevel.add("scala");
 		ignoreOneLevel.add("sun");

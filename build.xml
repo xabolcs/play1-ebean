@@ -4,7 +4,7 @@
 	<property name="java.release.version" value="6" />
 	<property name="ebean.version" value="7.21.2" />
 	<!--<property name="ebean.version" value="8.2.1" />-->
-	<property name="ebean.agent.version" value="4.5.4" />
+	<property name="ebean.agent.version" value="4.11.1" />
 	<property name="module.version" value="1.0.7RC1" />
 	<property name="play.path" value="/usr/local/play-${play.version}" />
 
@@ -21,8 +21,12 @@
 		</fileset>
 	</path>
 
-	<target name="init">
-		<taskdef name="ebeanEnhance" classname="com.avaje.ebean.enhance.ant.AntEnhanceTask" classpathref="project.classpath" />
+	<target name="agent-init">
+		<mkdir dir="tmp/classes" />
+		<javac srcdir="src/com/avaje/ebean" destdir="tmp/classes/com/avaje/ebean" debug="yes">
+			<classpath refid="project.classpath"/>
+		</javac>
+		<taskdef name="ebeanEnhance" classname="com.avaje.ebean.enhance.ant.AntEnhanceTask" classpathref="project.classpath"/>
 	</target>
 
 	<target name="dist" depends="clean,build">
@@ -94,10 +98,13 @@
 		</antcall>
 	</target>
 
-	<target name="compile" depends="print-java-version,check-java-version,sync-dependencies,init">
+	<target name="up-to-date-deps" depends="sync-dependencies">
 		<antcall target="do-deps">
 			<param name="testAppPath" value="${basedir}"/>
 		</antcall>
+	</target>
+
+	<target name="compile" depends="print-java-version,check-java-version,up-to-date-deps">
 		<mkdir dir="tmp/classes" />
 		<!--<javac srcdir="src" destdir="tmp/classes" debug="yes">-->
 		<javac srcdir="src" destdir="tmp/classes" debug="yes" release="${java.release.version}">
@@ -109,10 +116,23 @@
 				<exclude name="**/*.java" />
 			</fileset>
 		</copy>
+	</target>
+
+	<target name="ebeanAgentOverride" depends="up-to-date-deps">
+		<zip destfile="lib/agentOverride.jar">
+			<zipfileset src="lib/avaje-ebeanorm-agent-${ebean.agent.version}.jar"/>
+			<fileset dir="tmp/classes/">
+				<include name="com/avaje/ebean/**/*.class"/>
+			</fileset>
+		</zip>
+		<move file="lib/agentOverride.jar" tofile="lib/avaje-ebeanorm-agent-${ebean.agent.version}.jar" />
+	</target>
+
+	<target name="ebenEnhance" depends="ebeanAgentOverride,agent-init,compile">
 		<ebeanEnhance classSource="tmp/classes" packages="play/modules/ebean" transformArgs="transientInternalFields=true;debug=1" />
 	</target>
 
-	<target name="build" depends="compile">
+	<target name="build" depends="compile,ebenEnhance">
 		<jar jarfile="lib/play-ebean-${module.version}.jar" basedir="tmp/classes" />
 	</target>
 

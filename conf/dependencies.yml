@@ -3,4 +3,4 @@ self: play -> ebean 1.0.7RC1
 require:
   - play [1.2.4,1.4[
   - org.avaje.ebeanorm -> avaje-ebeanorm 7.21.2
-  - org.avaje.ebeanorm -> avaje-ebeanorm-agent 4.5.4
+  - org.avaje.ebeanorm -> avaje-ebeanorm-agent 4.11.1
