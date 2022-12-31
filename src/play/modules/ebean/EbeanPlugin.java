@@ -321,7 +321,7 @@ public class EbeanPlugin extends PlayPlugin
 
     private List<Property> listProperties(boolean includeTransient)
     {
-      List<Model.Property> properties = new ArrayList<Model.Property>();
+      List<Property> properties = new ArrayList<Property>();
       Set<Field> fields = new HashSet<Field>();
       Class<?> tclazz = modelClass;
       while (!tclazz.equals(Object.class)) {
@@ -335,7 +335,7 @@ public class EbeanPlugin extends PlayPlugin
         if (!includeTransient && (Modifier.isTransient(f.getModifiers()) || f.getAnnotation(javax.persistence.Transient.class) != null)) {
           continue;
         }
-        Model.Property mp = buildProperty(f);
+        Property mp = buildProperty(f);
         if (mp != null) {
           properties.add(mp);
         }
@@ -362,9 +362,9 @@ public class EbeanPlugin extends PlayPlugin
       throw new UnexpectedException("Cannot get the object @Id for an object of type " + modelClass);
     }
 
-    Model.Property buildProperty(final Field field)
+    Property buildProperty(final Field field)
     {
-      Model.Property modelProperty = new Model.Property();
+      Property modelProperty = new Property();
       modelProperty.type = field.getType();
       modelProperty.field = field;
       if (Model.class.isAssignableFrom(field.getType())) {
@@ -455,7 +455,7 @@ public class EbeanPlugin extends PlayPlugin
     String getSearchQuery(List<String> searchFields)
     {
       String q = "";
-      for (Model.Property property : listProperties(false)) {
+      for (Property property : listProperties(false)) {
         if (property.isSearchable && (searchFields == null || searchFields.isEmpty() ? true : searchFields.contains(property.name))) {
           if (!q.equals("")) {
             q += " or ";
