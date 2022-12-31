@@ -377,7 +377,7 @@ public class EbeanPlugin extends PlayPlugin
       Property modelProperty = new Property();
       modelProperty.type = field.getType();
       modelProperty.field = field;
-      if (play.db.Model.class.isAssignableFrom(field.getType())) {
+      if (EbeanSupport.class.isAssignableFrom(field.getType())) {
         if (field.isAnnotationPresent(OneToOne.class)) {
           if (field.getAnnotation(OneToOne.class).mappedBy().equals("")) {
             modelProperty.isRelation = true;
