@@ -29,7 +29,9 @@ import play.PlayPlugin;
 import play.classloading.ApplicationClasses.ApplicationClass;
 import play.data.binding.Binder;
 import play.db.DB;
-import play.db.Model;
+import play.db.Model.Choices;
+import play.db.Model.Factory;
+import play.db.Model.Manager;
 import play.db.Model.Property;
 import play.db.jpa.JPAPlugin;
 import play.exceptions.DatabaseException;
@@ -166,7 +168,7 @@ public class EbeanPlugin extends PlayPlugin
 
   @Override
   @SuppressWarnings("unchecked")
-  public Model.Factory modelFactory(Class<? extends Model> modelClass)
+  public Factory modelFactory(Class<? extends play.db.Model> modelClass)
   {
     if (EbeanSupport.class.isAssignableFrom(modelClass) && modelClass.isAnnotationPresent(Entity.class)) {
       return new EbeanModelLoader((Class<EbeanSupport>) modelClass);
@@ -179,13 +181,14 @@ public class EbeanPlugin extends PlayPlugin
   public Object bind(String name, Class clazz, java.lang.reflect.Type type, Annotation[] annotations, Map<String, String[]> params)
   {
     if (EbeanSupport.class.isAssignableFrom(clazz)) {
-      String keyName = Model.Manager.factoryFor(clazz).keyName();
+      Factory factory = Manager.factoryFor(clazz);
+      String keyName = factory.keyName();
       String idKey = name + "." + keyName;
       if (params.containsKey(idKey) && params.get(idKey).length > 0 && params.get(idKey)[0] != null && params.get(idKey)[0].trim().length() > 0) {
         String id = params.get(idKey)[0];
         Object o;
         try {
-          o = EbeanContext.server().find(clazz, play.data.binding.Binder.directBind(name, annotations, id, Model.Manager.factoryFor(clazz).keyType()));
+          o = EbeanContext.server().find(clazz, play.data.binding.Binder.directBind(name, annotations, id, factory.keyType()));
         } catch (Exception e) {
           throw new UnexpectedException(e);
         }
@@ -205,7 +208,7 @@ public class EbeanPlugin extends PlayPlugin
     return null;
   }
 
-  public static class EbeanModelLoader implements Model.Factory
+  public static class EbeanModelLoader implements Factory
   {
 
     private Class<? extends EbeanSupport> modelClass;
@@ -215,17 +218,20 @@ public class EbeanPlugin extends PlayPlugin
       this.modelClass = modelClass;
     }
 
+    @Override
     public String keyName()
     {
       return keyField().getName();
     }
 
+    @Override
     public Class<?> keyType()
     {
       return keyField().getType();
     }
 
-    public Object keyValue(Model m)
+    @Override
+    public Object keyValue(play.db.Model m)
     {
       try {
         return keyField().get(m);
@@ -234,7 +240,8 @@ public class EbeanPlugin extends PlayPlugin
       }
     }
 
-    public Model findById(Object id)
+    @Override
+    public play.db.Model findById(Object id)
     {
       if (id == null) return null;
 
@@ -246,7 +253,8 @@ public class EbeanPlugin extends PlayPlugin
     }
 
     @SuppressWarnings("unchecked")
-    public List<Model> fetch(int offset, int size, String orderBy, String order, List<String> searchFields, String keywords, String where)
+    @Override
+    public List<play.db.Model> fetch(int offset, int size, String orderBy, String order, List<String> searchFields, String keywords, String where)
     {
       Query<?> q = EbeanContext.server().createQuery(modelClass);
       String filter = null;
@@ -280,9 +288,10 @@ public class EbeanPlugin extends PlayPlugin
       }
       q.orderBy(orderBy + " " + order);
       q.setFirstRow(offset).setMaxRows(size);
-      return (List<Model>) q.findList();
+      return (List<play.db.Model>) q.findList();
     }
 
+    @Override
     public Long count(List<String> searchFields, String keywords, String where)
     {
       Query<?> q = EbeanContext.server().createQuery(modelClass);
@@ -307,6 +316,7 @@ public class EbeanPlugin extends PlayPlugin
       return Long.valueOf(q.findRowCount());
     }
 
+    @Override
     public void deleteAll()
     {
       String query = "delete from " + modelClass.getSimpleName();
@@ -367,12 +377,12 @@ public class EbeanPlugin extends PlayPlugin
       Property modelProperty = new Property();
       modelProperty.type = field.getType();
       modelProperty.field = field;
-      if (Model.class.isAssignableFrom(field.getType())) {
+      if (play.db.Model.class.isAssignableFrom(field.getType())) {
         if (field.isAnnotationPresent(OneToOne.class)) {
           if (field.getAnnotation(OneToOne.class).mappedBy().equals("")) {
             modelProperty.isRelation = true;
             modelProperty.relationType = field.getType();
-            modelProperty.choices = new Model.Choices() {
+            modelProperty.choices = new Choices() {
 
               @SuppressWarnings("unchecked")
               public List<Object> list()
@@ -386,7 +396,7 @@ public class EbeanPlugin extends PlayPlugin
         if (field.isAnnotationPresent(ManyToOne.class)) {
           modelProperty.isRelation = true;
           modelProperty.relationType = field.getType();
-          modelProperty.choices = new Model.Choices() {
+          modelProperty.choices = new Choices() {
 
             @SuppressWarnings("unchecked")
             public List<Object> list()
@@ -404,7 +414,7 @@ public class EbeanPlugin extends PlayPlugin
             modelProperty.isRelation = true;
             modelProperty.isMultiple = true;
             modelProperty.relationType = fieldType;
-            modelProperty.choices = new Model.Choices() {
+            modelProperty.choices = new Choices() {
 
               @SuppressWarnings("unchecked")
               public List<Object> list()
@@ -420,7 +430,7 @@ public class EbeanPlugin extends PlayPlugin
             modelProperty.isRelation = true;
             modelProperty.isMultiple = true;
             modelProperty.relationType = fieldType;
-            modelProperty.choices = new Model.Choices() {
+            modelProperty.choices = new Choices() {
 
               @SuppressWarnings("unchecked")
               public List<Object> list()
@@ -433,7 +443,7 @@ public class EbeanPlugin extends PlayPlugin
         }
       }
       if (field.getType().isEnum()) {
-        modelProperty.choices = new Model.Choices() {
+        modelProperty.choices = new Choices() {
 
           @SuppressWarnings("unchecked")
           public List<Object> list()
