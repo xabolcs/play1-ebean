@@ -17,6 +17,9 @@ import play.exceptions.UnexpectedException;
 import com.avaje.ebean.enhance.agent.ClassBytesReader;
 import com.avaje.ebean.enhance.agent.InputStreamTransform;
 
+import javax.persistence.Embeddable;
+import javax.persistence.Entity;
+
 public class EbeanEnhancer extends Enhancer
 {
   static ClassFileTransformer transformer = new PlayAwareTransformer(new PlayClassBytesReader(), "transientInternalFields=true;debug=0");
@@ -29,14 +32,9 @@ public class EbeanEnhancer extends Enhancer
     if (buffer != null) applicationClass.enhancedByteCode = buffer;
 
     CtClass ctClass = makeClass(applicationClass);
- 
-    if (!ctClass.subtypeOf(classPool.get("play.modules.ebean.EbeanSupport"))) {
-      // We don't want play style enhancements to happen to classes other than subclasses of EbeanSupport
-      return;
-    }
 
-    // Enhance only JPA entities
-    if (!hasAnnotation(ctClass, "javax.persistence.Entity")) {
+    if (!ctClass.subtypeOf(classPool.get(EbeanSupport.class.getName()))
+            || !hasAnnotation(ctClass, Entity.class.getName()) && !hasAnnotation(ctClass, Embeddable.class.getName())) {
       return;
     }
 
