@@ -64,8 +64,8 @@ public class EbeanEnhancer extends Enhancer
     ctClass.addMethod(CtMethod.make("public static play.modules.ebean.EbeanSupport create(String name, play.mvc.Scope.Params params) { return create(" + entityName + ".class,name, params.all(), null); }",ctClass));
 
     // count
-    ctClass.addMethod(CtMethod.make("public static long count() { return (long) ebean().createQuery(" + entityName + ".class).findRowCount(); }", ctClass));
-    ctClass.addMethod(CtMethod.make("public static long count(String query, Object[] params) { return (long) createQuery(" + entityName + ".class,query,params).findRowCount(); }", ctClass));
+    ctClass.addMethod(CtMethod.make("public static long count() { return (long) ebean().createQuery(" + entityName + ".class).findCount(); }", ctClass));
+    ctClass.addMethod(CtMethod.make("public static long count(String query, Object[] params) { return (long) createQuery(" + entityName + ".class,query,params).findCount(); }", ctClass));
 
     // findAll
     ctClass.addMethod(CtMethod.make("public static java.util.List findAll() { return ebean().createQuery(" + entityName + ".class).findList(); }", ctClass));

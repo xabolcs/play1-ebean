@@ -313,7 +313,7 @@ public class EbeanPlugin extends PlayPlugin
         }
       }
 
-      return Long.valueOf(q.findRowCount());
+      return (long) q.findCount();
     }
 
     @Override
