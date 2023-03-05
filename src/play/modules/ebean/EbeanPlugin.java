@@ -28,6 +28,7 @@ import play.Play;
 import play.PlayPlugin;
 import play.classloading.ApplicationClasses.ApplicationClass;
 import play.data.binding.Binder;
+import play.data.binding.RootParamNode;
 import play.db.DB;
 import play.db.Model;
 import play.db.Model.Property;
@@ -174,11 +175,12 @@ public class EbeanPlugin extends PlayPlugin
 
   @SuppressWarnings({ "rawtypes", "unchecked" })
   @Override
-  public Object bind(String name, Class clazz, java.lang.reflect.Type type, Annotation[] annotations, Map<String, String[]> params)
+  public Object bind(RootParamNode rootParamNode, String name, Class clazz, java.lang.reflect.Type type, Annotation[] annotations)
   {
     if (EbeanSupport.class.isAssignableFrom(clazz)) {
       String keyName = Model.Manager.factoryFor(clazz).keyName();
       String idKey = name + "." + keyName;
+      Map<String, String[]> params = rootParamNode.originalParams;
       if (params.containsKey(idKey) && params.get(idKey).length > 0 && params.get(idKey)[0] != null && params.get(idKey)[0].trim().length() > 0) {
         String id = params.get(idKey)[0];
         Object o;
@@ -191,14 +193,14 @@ public class EbeanPlugin extends PlayPlugin
       }
       return EbeanSupport.create(clazz, name, params, annotations);
     }
-    return super.bind(name, clazz, type, annotations, params);
+    return null;
   }
 
   @Override
-  public Object bind(String name, Object o, Map<String, String[]> params)
+  public Object bindBean(RootParamNode rootParamNode, String name, Object bean)
   {
-    if (o instanceof EbeanSupport) {
-      return EbeanSupport.edit(o, name, params, null);
+    if (bean instanceof EbeanSupport) {
+      return EbeanSupport.edit(bean, name, rootParamNode.originalParams, null);
     }
     return null;
   }
